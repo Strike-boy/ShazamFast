@@ -158,14 +158,14 @@ def recognize_acrcloud(file_path):
     signature_version = "1"
     timestamp = str(int(datetime.utcnow().timestamp()))
 
-    string_to_sign = "\n".join([http_method, http_uri, ACR_KEY, data_type, signature_version, timestamp])
-    sign = base64.b64encode(
-        hmac.new(ACR_SECRET.encode('ascii'), string_to_sign.encode('ascii'), digestmod=hashlib.sha1).digest()
-    ).decode('ascii')
+    string_to_sign = "\n".join([http_method, http_uri, ACR_ACCESS_KEY, data_type, signature_version, timestamp])
+sign = base64.b64encode(
+    hmac.new(ACR_SECRET_KEY.encode('ascii'), string_to_sign.encode('ascii'), digestmod=hashlib.sha1).digest()
+).decode('ascii')
 
     files = {'sample': open(file_path, 'rb')}
     data = {
-        'access_key': ACR_KEY,
+        'access_key': ACR_ACCESS_KEY,
         'data_type': data_type,
         'signature_version': signature_version,
         'signature': sign,
@@ -185,16 +185,6 @@ async def extract_audio_from_video(file_path, output_path):
         return False
 video_path = "user_video.mp4"
 audio_path = "music.mp3"
-
-await message.video.download(video_path)
-
-success = await extract_audio_from_video(video_path, audio_path)
-if success:
-    with open(audio_path, 'rb') as audio:
-        await message.answer_audio(audio)
-    os.remove(audio_path)
-
-os.remove(video_path)
 
 # Команда /start
 @dp.message_handler(commands=['start'])
@@ -266,7 +256,7 @@ async def handle_media(message: types.Message):
 
     try:
         result = recognize_acrcloud(file.name)
-
+        
         if 'metadata' in result:
             music = result['metadata']['music'][0]
             title = music.get('title', 'Неизвестно')
@@ -278,11 +268,21 @@ async def handle_media(message: types.Message):
                 reply += f"\n🔗 <a href='{spotify}'>Spotify</a>"
 
             await message.answer(reply, parse_mode='HTML')
-        else:
-            await message.answer("⚠️ Не удалось распознать музыку.")
-    except Exception as e:
-        await message.answer(f"❌ Ошибка при распознавании: {e}")
+    else:
+        await message.answer("❗ Музыка не найдена. Вырезаю аудио из видео...")
 
+        video_path = "user_video.mp4"
+        audio_path = "music.mp3"
+
+        await message.video.download(video_path)
+
+        success = await extract_audio_from_video(video_path, audio_path)
+        if success:
+            with open(audio_path, 'rb') as audio:
+                await message.answer_audio(audio)
+            os.remove(audio_path)
+
+        os.remove(video_path)
 @dp.message_handler(lambda message: message.text and len(message.text) > 3)
 async def search_song_by_name(message: types.Message):
     query = message.text.strip()
