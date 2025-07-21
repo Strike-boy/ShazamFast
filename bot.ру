@@ -7,6 +7,8 @@ import base64
 import hmac
 import hashlib
 import moviepy.editor as mp
+from flask import Flask
+from threading import Thread
 from aiogram import Bot, Dispatcher, types
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
 from aiogram.utils import executor
@@ -314,5 +316,19 @@ async def search_song_by_name(message: types.Message):
     except Exception as e:
         await message.answer(f"❌ Ошибка при поиске: {e}")
 
+app = Flask(__name__)
 
+@app.route('/')
+def home():
+    return "ShazamFast бот работает! 🚀"
 
+def start_bot():
+    asyncio.set_event_loop(asyncio.new_event_loop())
+    from aiogram import executor
+    executor.start_polling(dp, skip_updates=True)
+
+if __name__ == "__main__":
+    t = Thread(target=start_bot)
+    t.start()
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
