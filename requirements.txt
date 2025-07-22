@@ -1,6 +1,8 @@
 aiogram==2.25.1
-flask
+aiohttp
+Flask
 requests
 yt-dlp
 ffmpeg
 pydub
+moviepy
