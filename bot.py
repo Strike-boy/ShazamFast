@@ -159,7 +159,7 @@ def recognize_acrcloud(file_path):
     timestamp = str(int(datetime.utcnow().timestamp()))
 
     string_to_sign = "\n".join([http_method, http_uri, ACR_ACCESS_KEY, data_type, signature_version, timestamp])
-sign = base64.b64encode(
+    sign = base64.b64encode(
     hmac.new(ACR_SECRET_KEY.encode('ascii'), string_to_sign.encode('ascii'), digestmod=hashlib.sha1).digest()
 ).decode('ascii')
 
