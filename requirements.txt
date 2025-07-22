@@ -3,6 +3,5 @@ aiohttp
 Flask
 requests
 yt-dlp
-ffmpeg
 pydub
 moviepy
