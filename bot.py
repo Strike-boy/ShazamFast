@@ -256,7 +256,7 @@ async def handle_media(message: types.Message):
 
     try:
         result = recognize_acrcloud(file.name)
-        
+
         if 'metadata' in result:
             music = result['metadata']['music'][0]
             title = music.get('title', 'Неизвестно')
@@ -268,21 +268,26 @@ async def handle_media(message: types.Message):
                 reply += f"\n🔗 <a href='{spotify}'>Spotify</a>"
 
             await message.answer(reply, parse_mode='HTML')
-    else:
-        await message.answer("❗ Музыка не найдена. Вырезаю аудио из видео...")
 
-        video_path = "user_video.mp4"
-        audio_path = "music.mp3"
+        else:
+            await message.answer("❗️ Музыка не найдена. Вырезаю аудио из видео...")
 
-        await message.video.download(video_path)
+            video_path = "user_video.mp4"
+            audio_path = "music.mp3"
 
-        success = await extract_audio_from_video(video_path, audio_path)
-        if success:
-            with open(audio_path, 'rb') as audio:
-                await message.answer_audio(audio)
-            os.remove(audio_path)
+            await message.video.download(video_path)
 
-        os.remove(video_path)
+            success = await extract_audio_from_video(video_path, audio_path)
+            if success:
+                with open(audio_path, 'rb') as audio:
+                    await message.answer_audio(audio)
+                os.remove(audio_path)
+
+            os.remove(video_path)
+
+    except Exception as e:
+        await message.answer(f"❌ Ошибка при распознавании: {e}")
+        
 @dp.message_handler(lambda message: message.text and len(message.text) > 3)
 async def search_song_by_name(message: types.Message):
     query = message.text.strip()
