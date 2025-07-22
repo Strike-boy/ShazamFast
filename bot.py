@@ -6,7 +6,6 @@ import requests
 import base64
 import hmac
 import hashlib
-import moviepy.editor as mp
 from flask import Flask
 from threading import Thread
 from aiogram import Bot, Dispatcher, types
@@ -177,14 +176,12 @@ def recognize_acrcloud(file_path):
 
 async def extract_audio_from_video(file_path, output_path):
     try:
-        video = mp.VideoFileClip(file_path)
-        video.audio.write_audiofile(output_path, logger=None)
+        audio = AudioSegment.from_file(file_path)
+        audio.export(output_path, format="mp3")
         return True
     except Exception as e:
         print("Ошибка при извлечении аудио:", e)
         return False
-video_path = "user_video.mp4"
-audio_path = "music.mp3"
 
 # Команда /start
 @dp.message_handler(commands=['start'])
