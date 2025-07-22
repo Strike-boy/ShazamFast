@@ -315,6 +315,7 @@ async def search_song_by_name(message: types.Message):
             'outtmpl': 'music.%(ext)s',
             'noplaylist': True,
             'quiet': True,
+            'cookiefile': 'cookie.txt',
             'postprocessors': [{
                 'key': 'FFmpegExtractAudio',
                 'preferredcodec': 'mp3',
