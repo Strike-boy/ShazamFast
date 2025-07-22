@@ -4,4 +4,3 @@ Flask
 requests
 yt-dlp
 pydub
-ffmpeg
