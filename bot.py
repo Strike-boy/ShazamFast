@@ -7,6 +7,7 @@ import requests
 import base64
 import hmac
 import hashlib
+import yt_dlp
 from flask import Flask
 from threading import Thread
 from aiogram import Bot, Dispatcher, types
@@ -15,7 +16,6 @@ from aiogram.utils import executor
 from aiogram.dispatcher.filters import CommandStart
 from aiogram.contrib.middlewares.logging import LoggingMiddleware
 from pydub import AudioSegment
-from yt_dlp import YoutubeDL
 from datetime import datetime
 
 API_TOKEN = '7936182138:AAHT25gYJuh2zU8-tk6yUVJOj9a5vmQeohk'
@@ -246,14 +246,26 @@ def lang_keyboard():
 
 @dp.message_handler(content_types=['audio', 'voice', 'video'])
 async def handle_media(message: types.Message):
-    file = await message.video.download(destination_file='temp.mp4') if message.video else \
-           await message.audio.download(destination_file='temp.mp3') if message.audio else \
-           await message.voice.download(destination_file='temp.ogg')
-
     await message.answer("🎵 Распознаю музыку, подожди...")
 
+    file_path = None
+
+    # Скачиваем файл
+    if message.video:
+        file_path = "temp.mp4"
+        await message.video.download(destination_file=file_path)
+    elif message.audio:
+        file_path = "temp.mp3"
+        await message.audio.download(destination_file=file_path)
+    elif message.voice:
+        file_path = "temp.ogg"
+        await message.voice.download(destination_file=file_path)
+    else:
+        await message.answer("❌ Невозможно обработать файл.")
+        return
+
     try:
-        result = recognize_acrcloud(file.name)
+        result = recognize_acrcloud(file_path)
 
         if 'metadata' in result:
             music = result['metadata']['music'][0]
@@ -270,21 +282,27 @@ async def handle_media(message: types.Message):
         else:
             await message.answer("❗️ Музыка не найдена. Вырезаю аудио из видео...")
 
-            video_path = "user_video.mp4"
-            audio_path = "music.mp3"
+            if message.video:
+                video_path = "user_video.mp4"
+                audio_path = "music.mp3"
+                await message.video.download(video_path)
 
-            await message.video.download(video_path)
+                success = await extract_audio_from_video(video_path, audio_path)
+                if success:
+                    with open(audio_path, 'rb') as audio:
+                        await message.answer_audio(audio)
+                    os.remove(audio_path)
 
-            success = await extract_audio_from_video(video_path, audio_path)
-            if success:
-                with open(audio_path, 'rb') as audio:
-                    await message.answer_audio(audio)
-                os.remove(audio_path)
-
-            os.remove(video_path)
-
+                os.remove(video_path)
+            else:
+                await message.answer("⚠️ Аудио можно извлечь только из видео.")
+                
     except Exception as e:
         await message.answer(f"❌ Ошибка при распознавании: {e}")
+
+    # Удаляем временный файл
+    if file_path and os.path.exists(file_path):
+        os.remove(file_path)
         
 @dp.message_handler(lambda message: message.text and len(message.text) > 3)
 async def search_song_by_name(message: types.Message):
