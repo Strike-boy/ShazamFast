@@ -4,8 +4,4 @@ Flask
 requests
 yt-dlp
 pydub
-moviepy
-imageio
-numpy
-decorator
-tqdm
+ffmpeg
