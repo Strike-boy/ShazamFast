@@ -185,26 +185,37 @@ async def extract_audio_from_video(file_path, output_path):
         return False
 
 def search_vk_music(query):
-    url = "https://api.vk.com/method/audio.search"
+    token = os.getenv("VK_TOKEN")  # убедись, что ты добавил VK_TOKEN в Render или в код
+    if not token:
+        return None
+
     params = {
-        "q": query,
-        "access_token": VK_TOKEN,
-        "v": "5.131",
-        "count": 1
+        'q': query,
+        'access_token': token,
+        'v': '5.131',
+        'count': 1
     }
+
+    response = requests.get("https://api.vk.com/method/audio.search", params=params)
+    data = response.json()
+
     try:
-        response = requests.get(url, params=params).json()
-        item = response['response']['items'][0]
-        title = item.get('title')
-        artist = item.get('artist')
-        url = item.get('url')
+        items = data["response"]["items"]
+        if not items:
+            return None
+
+        track = items[0]
+        url = track.get("url")
+        if not url:
+            return None
+
         return {
-            "title": title,
-            "artist": artist,
+            "title": track.get("title", "Неизвестно"),
+            "artist": track.get("artist", "Неизвестно"),
             "url": url
         }
     except Exception as e:
-        print("Ошибка VK:", e)
+        print("Ошибка VK Search:", e)
         return None
 
 # Команда /start
