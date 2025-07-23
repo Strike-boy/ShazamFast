@@ -7,7 +7,6 @@ import requests
 import base64
 import hmac
 import hashlib
-import yt_dlp
 from flask import Flask
 from threading import Thread
 from aiogram import Bot, Dispatcher, types
@@ -22,6 +21,7 @@ API_TOKEN = '7936182138:AAHT25gYJuh2zU8-tk6yUVJOj9a5vmQeohk'
 ACR_HOST = "identify-ap-southeast-1.acrcloud.com"
 ACR_ACCESS_KEY = "e48f0d7b2af6ccad4015b26d57d75903"
 ACR_SECRET_KEY = "WTWOUirBwcIPMJY6vOHEXVKilaMviC8doHQKGgaV"
+VK_TOKEN = "vk1.a.28U7Vkhl8vYPj6dSs8R35XK6xvHHn-dBDAphdJuqb9GikBcmRaoc0XmcsUWFiUNfpumdyquLxARKUakREEr7QATvpasmSC5xvQYknN95dXjtZMHHD6WmIp24qTAed2AW9FIdsdT5cVEvtftGmSFsoMFoQ7kF8XQ6RYlGpbfHPczac3S9zru10VKajMcLPRRw6Fq0mx-rI9qYf6znolx0MQ"
 
 ADMIN_ID = 1001788720  # замени при необходимости
 broadcast_mode = False
@@ -184,6 +184,29 @@ async def extract_audio_from_video(file_path, output_path):
         print("Ошибка при извлечении аудио:", e)
         return False
 
+def search_vk_music(query):
+    url = "https://api.vk.com/method/audio.search"
+    params = {
+        "q": query,
+        "access_token": VK_TOKEN,
+        "v": "5.131",
+        "count": 1
+    }
+    try:
+        response = requests.get(url, params=params).json()
+        item = response['response']['items'][0]
+        title = item.get('title')
+        artist = item.get('artist')
+        url = item.get('url')
+        return {
+            "title": title,
+            "artist": artist,
+            "url": url
+        }
+    except Exception as e:
+        print("Ошибка VK:", e)
+        return None
+
 # Команда /start
 @dp.message_handler(commands=['start'])
 async def cmd_start(message: types.Message):
@@ -305,38 +328,18 @@ async def handle_media(message: types.Message):
         os.remove(file_path)
         
 @dp.message_handler(lambda message: message.text and len(message.text) > 3)
-async def search_song_by_name(message: types.Message):
+async def handle_vk_search(message: types.Message):
     query = message.text.strip()
     await message.answer("🔍 Ищу песню, подожди...")
 
-    try:
-        ydl_opts = {
-            'format': 'bestaudio/best',
-            'outtmpl': 'music.%(ext)s',
-            'noplaylist': True,
-            'quiet': True,
-            'cookiefile': 'cookie.txt',
-            'postprocessors': [{
-                'key': 'FFmpegExtractAudio',
-                'preferredcodec': 'mp3',
-                'preferredquality': '192',
-            }]
-        }
-
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(f"ytsearch1:{query}", download=True)
-            if 'entries' in info:
-                audio_info = info['entries'][0]
-            else:
-                audio_info = info
-
-        with open("music.mp3", "rb") as music:
-            title = audio_info.get('title', 'Музыка')
-            await message.answer_audio(music, title=title)
-
-        os.remove("music.mp3")
-    except Exception as e:
-        await message.answer(f"❌ Ошибка при поиске: {e}")
+    result = search_vk_music(query)
+    if result and result["url"]:
+        caption = f"🎵 <b>{result['title']}</b>\n👤 {result['artist']}"
+        await message.answer_audio(result["url"], caption=caption, parse_mode="HTML")
+        increment_downloads(message.from_user.id)
+        add_to_history(message.from_user.id, query)
+    else:
+        await message.answer("❗️ Музыка не найдена.")
 
 app = Flask(__name__)
 
