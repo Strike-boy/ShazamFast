@@ -21,8 +21,7 @@ API_TOKEN = '7936182138:AAHT25gYJuh2zU8-tk6yUVJOj9a5vmQeohk'
 ACR_HOST = "identify-ap-southeast-1.acrcloud.com"
 ACR_ACCESS_KEY = "e48f0d7b2af6ccad4015b26d57d75903"
 ACR_SECRET_KEY = "WTWOUirBwcIPMJY6vOHEXVKilaMviC8doHQKGgaV"
-VK_TOKEN = "vk1.a.28U7Vkhl8vYPj6dSs8R35XK6xvHHn-dBDAphdJuqb9GikBcmRaoc0XmcsUWFiUNfpumdyquLxARKUakREEr7QATvpasmSC5xvQYknN95dXjtZMHHD6WmIp24qTAed2AW9FIdsdT5cVEvtftGmSFsoMFoQ7kF8XQ6RYlGpbfHPczac3S9zru10VKajMcLPRRw6Fq0mx-rI9qYf6znolx0MQ"
-VK_TOKEN = os.environ.get("VK_TOKEN")
+VK_TOKEN = os.environ.get("VK_TOKEN", "vk1.a.28U7Vkhl8vYPj6dSs8R35XK6xvHHn-dBDAphdJuqb9GikBcmRaoc0XmcsUWFiUNfpumdyquLxARKUakREEr7QATvpasmSC5xvQYknN95dXjtZMHHD6WmIp24qTAed2AW9FIdsdT5cVEvtftGmSFsoMFoQ7kF8XQ6RYlGpbfHPczac3S9zru10VKajMcLPRRw6Fq0mx-rI9qYf6znolx0MQ")
 
 ADMIN_ID = 1001788720  # замени при необходимости
 broadcast_mode = False
@@ -336,9 +335,19 @@ async def handle_vk_search(message: types.Message):
     result = search_vk_music(query)
     if result and result["url"]:
         caption = f"🎵 <b>{result['title']}</b>\n👤 {result['artist']}"
-        await message.answer_audio(result["url"], caption=caption, parse_mode="HTML")
-        increment_downloads(message.from_user.id)
-        add_to_history(message.from_user.id, query)
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(result["url"]) as resp:
+                    if resp.status == 200:
+                        audio_bytes = await resp.read()
+                        audio = types.InputFile(path_or_bytesio=audio_bytes, filename=f"{result['title']}.mp3")
+                        await message.answer_audio(audio, caption=caption, parse_mode="HTML")
+                        increment_downloads(message.from_user.id)
+                        add_to_history(message.from_user.id, query)
+                    else:
+                        await message.answer("⚠️ Не удалось скачать аудио с сервера.")
+        except Exception as e:
+            await message.answer(f"❌ Ошибка при скачивании: {e}")
     else:
         await message.answer("❗️ Музыка не найдена.")
 
