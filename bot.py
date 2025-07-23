@@ -22,6 +22,7 @@ ACR_HOST = "identify-ap-southeast-1.acrcloud.com"
 ACR_ACCESS_KEY = "e48f0d7b2af6ccad4015b26d57d75903"
 ACR_SECRET_KEY = "WTWOUirBwcIPMJY6vOHEXVKilaMviC8doHQKGgaV"
 VK_TOKEN = "vk1.a.28U7Vkhl8vYPj6dSs8R35XK6xvHHn-dBDAphdJuqb9GikBcmRaoc0XmcsUWFiUNfpumdyquLxARKUakREEr7QATvpasmSC5xvQYknN95dXjtZMHHD6WmIp24qTAed2AW9FIdsdT5cVEvtftGmSFsoMFoQ7kF8XQ6RYlGpbfHPczac3S9zru10VKajMcLPRRw6Fq0mx-rI9qYf6znolx0MQ"
+VK_TOKEN = os.environ.get("VK_TOKEN")
 
 ADMIN_ID = 1001788720  # замени при необходимости
 broadcast_mode = False
